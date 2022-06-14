@@ -1,0 +1,94 @@
+data:
+  train:
+    module: torch.utils.data
+    class: DataLoader
+    DataLoader:
+      dataset:
+        module: torchvision.datasets
+        class: CIFAR10
+        CIFAR10:
+          root: '''datasets/cifar'''
+          train: True
+          download: True
+          transform: transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+      batch_size: 64
+      shuffle: True
+      num_workers: 2
+
+  train_eval:
+    module: torch.utils.data
+    class: DataLoader
+    DataLoader:
+      dataset:
+        module: torchvision.datasets
+        class: CIFAR10
+        CIFAR10:
+          root: '''datasets/cifar'''
+          train: True
+          download: True
+          transform: transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+      batch_size: 64
+      shuffle: False
+      num_workers: 2
+
+  valid:
+    module: torch.utils.data
+    class: DataLoader
+    DataLoader:
+      dataset:
+        module: torchvision.datasets
+        class: CIFAR10
+        CIFAR10:
+          root: '''datasets/cifar'''
+          train: False
+          download: True
+          transform: transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
+      batch_size: 64
+      shuffle: True
+      num_workers: 2
+
+model:
+  module: models.mobilenet_v2
+  class: MobileNetV2
+  MobileNetV2:
+    num_classes: 10
+
+loss:
+  module: torch.nn
+  class: CrossEntropyLoss
+
+optimizer:
+  module: torch.optim
+  class: Adam
+  Adam:
+    params: config['model'].parameters()
+    lr: 0.001
+    amsgrad: True
+
+lr_scheduler:
+  module: torch.optim.lr_scheduler
+  class: ReduceLROnPlateau
+  ReduceLROnPlateau:
+    optimizer: config['optimizer']
+    mode: '''min'''
+    factor: 0.1
+    patience: 3
+    verbose: True
+
+metrics:
+  module: metrics.metrics
+  class: Metric
+  Metric:
+    metric:
+      accuracy:
+        module: metrics.metric_funcs
+        class: Accuracy
+      loss:
+        module: torch.nn
+        class: CrossEntropyLoss
+    output_transform: 'lambda x: x'
+
+extralibs:
+  torch: torch
+  torchvision: torchvision
+  transforms: torchvision.transforms
