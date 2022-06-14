@@ -1,7 +1,6 @@
 import os
 import copy
 import torch
-import logging
 import argparse
 import numpy as np
 
@@ -39,25 +38,15 @@ if __name__ == "__main__":
     parser.add_argument('--log-dir', type=str, default='saved')
     args = parser.parse_args()
     
-    #set up logger
-    log_dir = args.log_dir
-    if not Path(log_dir).exists():
-        Path(log_dir).mkdir()
-    
-    logger = logging.getLogger('train')
-    logger.setLevel(logging.DEBUG)
-    file_hand = logging.FileHandler(f'{log_dir}/file.log')
-    formatter = logging.Formatter(f'%(asctime)s - %(name)s - %(levelname)s - %(message)s')
-    file_hand.setFormatter(formatter)
-    logger.addHandler(file_hand)
-    
-    # set up
+    # set up stages
     config = utils.load_yaml(args.config_path)
     stages = utils.eval_config(config=config)
     # data loader
     train_loader = stages['data']['train']
     train_eval_loader = stages['data']['train']
     valid_loader = stages['data']['valid']
+    #set up logger
+    logger = stages['logger'].get_logger
     # set up for trainer
     model = stages['model']
     logger.info(model)
@@ -75,7 +64,7 @@ if __name__ == "__main__":
         optimizer.load_state_dict(checkpoint['optimizer'])
         print('RESUME !!!')
     # prepare for (multi-device) GPU training
-    device, device_ids = prepare_device(args.num_gpus)
+    device, device_ids = prepare_device(n_gpu_use=args.num_gpus)
     model = model.to(device)
     if len(device_ids) > 1:
         model = torch.nn.DataParallel(model, device_ids=device_ids)

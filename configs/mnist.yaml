@@ -82,8 +82,20 @@ metrics:
         class: CrossEntropyLoss
     output_transform: 'lambda x: x'
 
+logger:
+  module: metrics.logger
+  class: Logger
+  Logger:
+    log_name: '''train'''
+    log_dir: '''saved'''
+    model_name: '''MNIST'''
+    log_mode: logging.DEBUG
+    log_formatter: '''%(asctime)s - %(name)s - %(levelname)s - %(message)s'''
+  
+
 extralibs:
   torch: torch
+  logging: logging
   torchvision: torchvision
   transforms: torchvision.transforms
 
