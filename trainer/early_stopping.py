@@ -1,6 +1,4 @@
-from statistics import mode
 import numpy as np
-import torch
 
 
 class EarlyStopping:
@@ -28,7 +26,6 @@ class EarlyStopping:
         self.counter = 0
         self.best_score = None
         self.early_stop = False
-        self.val_loss_min = np.Inf
         self.delta = delta
         self.mode = mode
         self.monitor = monitor
