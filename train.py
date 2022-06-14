@@ -15,7 +15,7 @@ from trainer.trainer import Trainer
 if __name__ == "__main__":
     
     parser = argparse.ArgumentParser()
-    parser.add_argument('--mode', type=str, default='train')
+    parser.add_argument('--mode', type=str, default='train')    # to save checkpoint, train: just save model state dict - resume: save both model and optimizer state dict
     parser.add_argument('--config-path', type=str, default='config_yaml/config.yaml')
     parser.add_argument('--num-epochs', type=int, default=100)
     parser.add_argument('--project-name', type=str)
@@ -48,7 +48,7 @@ if __name__ == "__main__":
         print('RESUME !!!')
     
     time = datetime.now().strftime(r'%y%m%d%H%M')
-    save_weight_dir = Path(f'{args.save_weight_dir}/models/{args.project_name}/{time}')
+    save_weight_dir = Path(f'{args.save_weight_dir}/models/{args.project_name}/{args.mode}/{time}')
     if not save_weight_dir.exists():
         save_weight_dir.mkdir(parents=True)
 
@@ -87,10 +87,15 @@ if __name__ == "__main__":
             optim_state_dict = copy.deepcopy(optimizer.state_dict())
 
             min_loss = valid_metrics[f'valid_loss']
-            checkpoint = {
-                'state_dict': model_state_dict,
-                'optimizer': optim_state_dict
-            }
+            if args.mode == 'resume':
+                checkpoint = {
+                    'state_dict': model_state_dict,
+                    'optimizer': optim_state_dict
+                }
+            elif args.mode == 'train':
+                checkpoint = {
+                    'state_dict': model_state_dict
+                }
 
             save_path = save_weight_dir.joinpath(f'best_valid_loss_{min_loss}.pth')
             torch.save(obj=checkpoint, f=str(save_path))
