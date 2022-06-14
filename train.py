@@ -21,15 +21,17 @@ if __name__ == "__main__":
     parser.add_argument('--project-name', type=str)
     parser.add_argument('--device', type=str)
     parser.add_argument('--save-weight-dir', type=str)
+    parser.add_argument('--resume-path', type=str, default=None)
     args = parser.parse_args()
     
+    # set up
     config = utils.load_yaml(args.config_path)
     stages = utils.eval_config(config=config)
-    
+    # data loader
     train_loader = stages['data']['train']
-    train_eval_loader = stages['data']['train_eval']
+    train_eval_loader = stages['data']['train']
     valid_loader = stages['data']['valid']
-    
+    # set up for trainer
     model = stages['model']
     optimizer = stages['optimizer']
     loss_fn = stages['loss']
@@ -38,9 +40,15 @@ if __name__ == "__main__":
     early_stopping = stages['early_stopping']
     writer = SummaryWriter(f'runs/{args.project_name}')
     step = 0
+    # Resume
+    if args.resume_path is not None:
+        checkpoint = torch.load(f=args.resume_path, map_location='cpu')
+        model.load_state_dict(checkpoint['state_dict'])
+        optimizer.load_state_dict(checkpoint['optimizer'])
+        print('RESUME !!!')
     
     time = datetime.now().strftime(r'%y%m%d%H%M')
-    save_weight_dir = Path(f'{args.save_weight_dir} / models / {args.project_name} / {time}')
+    save_weight_dir = Path(f'{args.save_weight_dir}/models/{args.project_name}/{time}')
     if not save_weight_dir.exists():
         save_weight_dir.mkdir(parents=True)
 
