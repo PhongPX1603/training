@@ -15,22 +15,6 @@ data:
       shuffle: True
       num_workers: 2
 
-  train_eval:
-    module: torch.utils.data
-    class: DataLoader
-    DataLoader:
-      dataset:
-        module: torchvision.datasets
-        class: MNIST
-        MNIST:
-          root: '''datasets/mnist'''
-          train: True
-          download: True
-          transform: transforms.Compose([transforms.ToTensor(), transforms.Normalize((0.1307,), (0.3081,))])
-      batch_size: 64
-      shuffle: True
-      num_workers: 2
-
   valid:
     module: torch.utils.data
     class: DataLoader

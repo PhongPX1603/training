@@ -12,7 +12,9 @@ class Trainer:
         criterion = None,
         optimizer = None,
         metrics = None,
-        device: str = 'cpu'
+        device: str = 'cpu',
+        writer = None,
+        step: int = 0
     ):
         super(Trainer, self).__init__()
         self.model = model
@@ -20,6 +22,8 @@ class Trainer:
         self.optimizer = optimizer
         self.device = device
         self.metrics = metrics
+        self.writer = writer
+        self.step = step
         
     def train_epoch(self, evaluator: str = 'train', data_loader: nn.Module = None) -> Dict[str, float]:
         self.model.to(self.device).train()
@@ -38,6 +42,10 @@ class Trainer:
                 evaluator=evaluator,
                 output=(preds, targets)
             )
+            self.writer.add_scalar('training Loss', loss, global_step=self.step)
+            acc = self.metrics.metric_tracker[f'{evaluator}_accuracy'][-1]
+            self.writer.add_scalar('training Acc', acc, global_step=self.step)
+            self.step += 1
 
         return self.metrics.compute
     

@@ -8,6 +8,7 @@ import utils
 
 from pathlib import Path
 from datetime import datetime
+from torch.utils.tensorboard import SummaryWriter
 from trainer.trainer import Trainer
 
 
@@ -35,6 +36,8 @@ if __name__ == "__main__":
     metrics = stages['metrics']
     lr_scheduler = stages['lr_scheduler']
     early_stopping = stages['early_stopping']
+    writer = SummaryWriter(f'runs/{args.project_name}')
+    step = 0
     
     time = datetime.now().strftime(r'%y%m%d%H%M')
     save_weight_dir = Path(f'{args.save_weight_dir} / models / {args.project_name} / {time}')
@@ -46,7 +49,9 @@ if __name__ == "__main__":
         criterion=loss_fn,
         optimizer=optimizer,
         metrics=metrics,
-        device=args.device
+        device=args.device,
+        writer=writer,
+        step=step
     )
 
     print('Start Training !!!')
