@@ -62,7 +62,7 @@ if __name__ == "__main__":
         print(f'\t {valid_metrics}')
         
         lr_scheduler.step(valid_metrics[f'valid_loss'])
-        early_stopping(valid_metrics[f'valid_loss'])
+        early_stopping(valid_metrics)
         if early_stopping.early_stop:
             break
 
