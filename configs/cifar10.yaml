@@ -75,6 +75,16 @@ lr_scheduler:
     patience: 3
     verbose: True
 
+early_stopping:
+  module: handler.early_stopping
+  class: EarlyStopping
+  EarlyStopping:
+    patience: 10
+    verbose: True
+    delta: 0
+    mode: '''min'''
+    monitor: '''valid_loss'''
+    
 metrics:
   module: metrics.metrics
   class: Metric
@@ -88,7 +98,25 @@ metrics:
         class: CrossEntropyLoss
     output_transform: 'lambda x: x'
 
+tensorboard:
+  module: handler.tensorboard
+  class: TensorBoard
+  TensorBoard:
+    tb_dir: '''runs/MNIST'''
+
+logger:
+  module: handler.logger
+  class: Logger
+  Logger:
+    log_name: '''train'''
+    log_dir: '''saved'''
+    model_name: '''MNIST'''
+    log_mode: logging.DEBUG
+    log_formatter: '''%(asctime)s - %(name)s - %(levelname)s - %(message)s'''
+  
+
 extralibs:
   torch: torch
+  logging: logging
   torchvision: torchvision
   transforms: torchvision.transforms

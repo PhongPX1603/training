@@ -60,7 +60,7 @@ lr_scheduler:
     verbose: True
 
 early_stopping:
-  module: trainer.early_stopping
+  module: handler.early_stopping
   class: EarlyStopping
   EarlyStopping:
     patience: 10
@@ -82,8 +82,14 @@ metrics:
         class: CrossEntropyLoss
     output_transform: 'lambda x: x'
 
+tensorboard:
+  module: handler.tensorboard
+  class: TensorBoard
+  TensorBoard:
+    tb_dir: '''runs/MNIST'''
+
 logger:
-  module: metrics.logger
+  module: handler.logger
   class: Logger
   Logger:
     log_name: '''train'''
