@@ -123,3 +123,7 @@ python train.py --config-path (str-config path) --num-epochs (int-number epochs)
 ```
 tensorboard --logdir (direction of tensorboard file or folder)
 ```
+
+### multi GPUs training
+```
+CUDA_VISIBLE_DEVICES=(gpu_id_list: 0,1,2,...) python train.py --config-path (str-config path) --num-epochs (int-number epochs) --project-name (str-name of project) --num-gpus (int: number GPUs) --save-weight-dir (str-direction of folder to save weights) --resume-path (weight path that you want to use to train continue)
