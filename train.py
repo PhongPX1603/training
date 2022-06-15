@@ -57,17 +57,17 @@ if __name__ == "__main__":
     early_stopping = stages['early_stopping']
     writer = SummaryWriter(f'runs/{args.project_name}')
     step = 0
+    # prepare for (multi-device) GPU training
+    device, device_ids = prepare_device(n_gpu_use=args.num_gpus)
+    model = model.to(device)
+    if len(device_ids) > 1:
+        model = torch.nn.DataParallel(model, device_ids=device_ids).module
     # Resume
     if args.resume_path is not None:
         checkpoint = torch.load(f=args.resume_path, map_location='cpu')
         model.load_state_dict(checkpoint['state_dict'])
         optimizer.load_state_dict(checkpoint['optimizer'])
         print('RESUME !!!')
-    # prepare for (multi-device) GPU training
-    device, device_ids = prepare_device(n_gpu_use=args.num_gpus)
-    model = model.to(device)
-    if len(device_ids) > 1:
-        model = torch.nn.DataParallel(model, device_ids=device_ids)
     # set up save weight dir
     time = datetime.now().strftime(r'%y%m%d%H%M')
     save_weight_dir = Path(f'{args.save_weight_dir}/models/{args.project_name}/{args.mode}/{time}')
@@ -104,23 +104,25 @@ if __name__ == "__main__":
         if early_stopping.early_stop:
             logger.info('Model can not improve. Stop Training !!!')
             break
+        
+        if save_weight_dir.joinpath(f'best_valid_loss_{min_loss}.pth').exists():
+                os.remove(str(save_weight_dir.joinpath(f'best_valid_loss_{min_loss}.pth')))
+        model_state_dict = copy.deepcopy(model.state_dict())
+        optim_state_dict = copy.deepcopy(optimizer.state_dict())
+        backup = {
+            'state_dict': model_state_dict,
+            'optimizer': optim_state_dict
+        }
+        save_path = save_weight_dir.joinpath(f'backup_epoch{epoch}.pth')
+        logger.info(f'Saving Back_up: {str(save_path)}')
+        torch.save(obj=backup, f=str(save_path))
 
         if valid_metrics['valid_loss'] < min_loss:                
             if save_weight_dir.joinpath(f'best_valid_loss_{min_loss}.pth').exists():
                 os.remove(str(save_weight_dir.joinpath(f'best_valid_loss_{min_loss}.pth')))
-
-            model_state_dict = copy.deepcopy(model.state_dict())
-            # set Resume mode
-            if args.mode == 'resume':
-                optim_state_dict = copy.deepcopy(optimizer.state_dict())
-                checkpoint = {
-                    'state_dict': model_state_dict,
-                    'optimizer': optim_state_dict
-                }
-            elif args.mode == 'train':
-                checkpoint = {
-                    'state_dict': model_state_dict
-                }
+            checkpoint = {
+                'state_dict': model_state_dict
+            }
                 
             min_loss = valid_metrics[f'valid_loss']
             save_path = save_weight_dir.joinpath(f'best_valid_loss_{min_loss}.pth')
