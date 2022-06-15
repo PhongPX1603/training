@@ -14,17 +14,23 @@ class Metric:
     def reset(self):
         self.metric_tracker = defaultdict(list)
 
-    def update(self, evaluator: str, output: Tuple[Any]) -> None:
+    def update(self, metric: Dict[str, float]) -> None:
+        for metric_name, metric_value in metric.items():
+            self.metric_tracker[metric_name].append(metric_value)
+
+    def iteration_compute(self, evaluator_name: str, output: Tuple[Any]) -> Dict[str, float]:
+        iter_metric = dict()
         output = self.output_transform(output)
         for metric_name, metric_fn in self.metric.items():
             value = metric_fn(*output)
             if isinstance(value, torch.Tensor):
                 value = value.item()
+            iter_metric[f'{evaluator_name}_{metric_name}'] = value
 
-            self.metric_tracker[f'{evaluator}_{metric_name}'].append(value)
+        return iter_metric
 
     @property
-    def compute(self) -> Dict[str, float]:
+    def epoch_compute(self) -> Dict[str, float]:
         result = {}
         for metric_name, metric_values in self.metric_tracker.items():
             result[metric_name] = sum(metric_values) / len(metric_values)
