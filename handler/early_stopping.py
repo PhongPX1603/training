@@ -1,15 +1,17 @@
-import numpy as np
+from torch import nn
+from typing import Dict
 
 
-class EarlyStopping:
+class EarlyStopping(nn.Module):
     """Early stops the training if validation loss doesn't improve after a given patience."""
     def __init__(
         self,
-        patience=7,
-        verbose=False,
-        delta=0,
-        mode='min',
-        monitor='valid_loss'):
+        patience: int = 7,
+        verbose: bool = False,
+        delta: float = 0,
+        mode: str = 'min',
+        monitor: str = 'valid_loss'
+    ) -> None:
         """
         Args:
             patience (int): How long to wait after last time validation loss improved.
@@ -21,6 +23,7 @@ class EarlyStopping:
             mode (str): 'min' - use with valid loss and 'max' use for valid acc
             monitor (str): 'valid_loss' or 'valid_accuracy' to take value in metrics
         """
+        super(EarlyStopping, self).__init__()
         self.patience = patience
         self.verbose = verbose
         self.counter = 0
@@ -29,9 +32,8 @@ class EarlyStopping:
         self.delta = delta
         self.mode = mode
         self.monitor = monitor
-        
-        
-    def __call__(self, metrics):
+
+    def forward(self, metrics: Dict[str, float]) -> None:
         score = metrics[self.monitor]
         if self.mode == 'max':
             score = -score
@@ -41,7 +43,7 @@ class EarlyStopping:
             
         elif score > self.best_score + self.delta:
             self.counter += 1
-            print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            print(f'Early Stopping Counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience:
                 print('Training Stop !!!')
                 self.early_stop = True

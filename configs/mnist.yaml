@@ -92,9 +92,7 @@ logger:
   module: handler.logger
   class: Logger
   Logger:
-    log_name: '''train'''
-    log_dir: '''saved'''
-    model_name: '''MNIST'''
+    log_dir: '''saved/MNIST'''
     log_mode: logging.DEBUG
     log_formatter: '''%(asctime)s - %(name)s - %(levelname)s - %(message)s'''
   
@@ -104,4 +102,3 @@ extralibs:
   logging: logging
   torchvision: torchvision
   transforms: torchvision.transforms
-

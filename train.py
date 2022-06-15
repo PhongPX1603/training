@@ -30,7 +30,7 @@ if __name__ == "__main__":
     train_eval_loader = stages['data']['train']
     valid_loader = stages['data']['valid']
     #set up logger
-    logger = stages['logger'].get_logger
+    logger = stages['logger'].get_logger('train')
     # set up for trainer
     model = stages['model']
     logger.info(model)
@@ -88,8 +88,8 @@ if __name__ == "__main__":
             logger.info('Model can not improve. Stop Training !!!')
             break
         
-        if save_weight_dir.joinpath(f'best_valid_loss_{min_loss}.pth').exists():
-                os.remove(str(save_weight_dir.joinpath(f'best_valid_loss_{min_loss}.pth')))
+        if save_weight_dir.joinpath(f'backup_epoch{epoch-1}.pth').exists():
+                os.remove(str(save_weight_dir.joinpath(f'backup_epoch{epoch-1}.pth')))
         model_state_dict = copy.deepcopy(model.state_dict())
         optim_state_dict = copy.deepcopy(optimizer.state_dict())
         backup = {
