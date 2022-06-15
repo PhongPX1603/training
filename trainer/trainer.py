@@ -1,7 +1,9 @@
 import torch
 import torch.nn as nn
 
-from typing import Dict
+from collections import defaultdict
+from typing import Callable, Dict
+
 
 class Trainer:
     def __init__(
@@ -11,8 +13,7 @@ class Trainer:
         optimizer = None,
         metrics = None,
         device: str = 'cpu',
-        writer = None,
-        step: int = 0
+        tensorboard: Callable = None,
     ):
         super(Trainer, self).__init__()
         self.model = model
@@ -20,10 +21,10 @@ class Trainer:
         self.optimizer = optimizer
         self.device = device
         self.metrics = metrics
-        self.writer = writer
-        self.step = step
-        
-    def train_epoch(self, evaluator: str = 'train', data_loader: nn.Module = None) -> Dict[str, float]:
+        self.tensorboard = tensorboard
+        self.iter_counters = defaultdict(int)
+
+    def train_epoch(self, evaluator_name: str = 'train', data_loader: nn.Module = None) -> Dict[str, float]:
         self.model.to(self.device).train()
         self.metrics.reset
         for samples, targets in data_loader:
@@ -36,18 +37,23 @@ class Trainer:
             loss.backward()
             self.optimizer.step()
 
-            self.metrics.update(
-                evaluator=evaluator,
-                output=(preds, targets)
-            )
-            self.writer.add_scalar('training Loss', loss, global_step=self.step)
-            acc = self.metrics.metric_tracker[f'{evaluator}_accuracy'][-1]
-            self.writer.add_scalar('training Acc', acc, global_step=self.step)
-            self.step += 1
+            iter_metric = self.metrics.iteration_compute(
+                evaluator_name=evaluator_name,
+                output=(preds, targets))
+            self.metrics.update(metric=iter_metric)    
 
-        return self.metrics.compute
+            for metric_name, metric_value in iter_metric.items():
+                self.tensorboard.write(
+                    metric_name,
+                    metric_value,
+                    step=self.iter_counters[evaluator_name]
+                )
+
+            self.iter_counters[evaluator_name] += 1
+
+        return self.metrics.epoch_compute
     
-    def eval_epoch(self, evaluator: str, data_loader) -> Dict[str, float]:
+    def eval_epoch(self, evaluator_name: str, data_loader: nn.Module = None) -> Dict[str, float]:
         self.model.to(self.device).eval()
         self.metrics.reset
         with torch.no_grad():
@@ -57,9 +63,18 @@ class Trainer:
                 
                 preds = self.model(samples)
                 
-                self.metrics.update(
-                    evaluator=evaluator,
+                iter_metric = self.metrics.iteration_compute(
+                    evaluator_name=evaluator_name,
                     output=(preds, targets)
                 )
+                self.metrics.update(iter_metric)
+                for metric_name, metric_value in iter_metric.items():
+                    self.tensorboard.write(
+                        metric_name,
+                        metric_value,
+                        step=self.iter_counters[evaluator_name]
+                    )
 
-        return self.metrics.compute
+                self.iter_counters[evaluator_name] += 1
+
+        return self.metrics.epoch_compute
