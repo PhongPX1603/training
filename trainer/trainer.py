@@ -53,7 +53,7 @@ class Trainer:
         self.metrics.reset
         for params in data_loader:
             self.optimizer.zero_grad()
-            params = [param.to(self.device) for param in params if torch.is_tensor(param)]
+            params = [param.to(self.device) if torch.is_tensor(param) else param for param in params]
             params[0] = self.model(params[0])
             loss = self.criterion(*params)
             loss.backward()
@@ -80,7 +80,7 @@ class Trainer:
         self.metrics.reset
         with torch.no_grad():
             for params in data_loader:
-                params = [param.to(self.device) for param in params if torch.is_tensor(param)]
+                params = [param.to(self.device) if torch.is_tensor(param) else param for param in params]
                 params[0] = self.model(params[0])
                 
                 iter_metric = self.metrics.iteration_compute(
