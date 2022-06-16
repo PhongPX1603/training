@@ -1,7 +1,5 @@
 import logging
 
-from pathlib import Path
-from datetime import datetime
 
 class Logger:
     def __init__(
@@ -11,10 +9,7 @@ class Logger:
         log_formatter = None
     ):
         super(Logger, self).__init__()
-        time = datetime.now().strftime(r'%y%m%d%H%M')
-        self.log_dir = f'{log_dir}/{time}'
-        if not Path(self.log_dir).exists():
-            Path(self.log_dir).mkdir(parents=True)
+        self.log_dir = log_dir
         self.log_mode = log_mode
         self.log_formatter = log_formatter
     

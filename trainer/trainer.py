@@ -1,8 +1,13 @@
+import os
 import torch
+import copy
+import time
 import torch.nn as nn
+import numpy as np
 
 from collections import defaultdict
 from typing import Callable, Dict
+from pathlib import Path
 
 
 class Trainer:
@@ -27,19 +32,17 @@ class Trainer:
     def train_epoch(self, evaluator_name: str = 'train', data_loader: nn.Module = None) -> Dict[str, float]:
         self.model.to(self.device).train()
         self.metrics.reset
-        for samples, targets in data_loader:
-            samples = samples.to(self.device)
-            targets = targets.to(self.device)
-            
+        for params in data_loader:
             self.optimizer.zero_grad()
-            preds = self.model(samples)
-            loss = self.criterion(preds, targets)
+            params = [param.to(self.device) for param in params if torch.is_tensor(param)]
+            params[0] = self.model(params[0])
+            loss = self.criterion(*params)
             loss.backward()
             self.optimizer.step()
 
             iter_metric = self.metrics.iteration_compute(
                 evaluator_name=evaluator_name,
-                output=(preds, targets))
+                output=(params))
             self.metrics.update(metric=iter_metric)    
 
             for metric_name, metric_value in iter_metric.items():
@@ -57,15 +60,13 @@ class Trainer:
         self.model.to(self.device).eval()
         self.metrics.reset
         with torch.no_grad():
-            for samples, targers in data_loader:
-                samples = samples.to(self.device)
-                targets = targers.to(self.device)
-                
-                preds = self.model(samples)
+            for params in data_loader:
+                params = [param.to(self.device) for param in params if torch.is_tensor(param)]
+                params[0] = self.model(params[0])
                 
                 iter_metric = self.metrics.iteration_compute(
                     evaluator_name=evaluator_name,
-                    output=(preds, targets)
+                    output=(params)
                 )
                 self.metrics.update(iter_metric)
                 for metric_name, metric_value in iter_metric.items():
@@ -78,3 +79,81 @@ class Trainer:
                 self.iter_counters[evaluator_name] += 1
 
         return self.metrics.epoch_compute
+
+    def train(
+        self,
+        resume_path: str = None,
+        save_dir: Path = None,
+        num_epochs: int = None,
+        train_loader = None,
+        train_eval_loader = None,
+        valid_loader = None,
+        lr_scheduler = None,
+        early_stopping = None,
+        logger = None
+        ):
+        # Resume
+        if resume_path is not None:
+            checkpoint = torch.load(f=resume_path, map_location='cpu')
+            self.model.load_state_dict(checkpoint['state_dict'])
+            self.optimizer.load_state_dict(checkpoint['optimizer'])
+            best_score = checkpoint['best_score']
+            score_name = checkpoint['score_name']
+            start_epoch = checkpoint['start_epoch']
+            early_stopping.best_score = best_score
+            print('RESUME !!!')
+        else:
+            start_epoch = 0
+            mode = early_stopping.mode
+            score_name = early_stopping.monitor
+            best_score = np.Inf if mode == 'min' else -np.Inf
+            print('Start Training !!!')
+        print(f'{time.asctime()} - STARTED')
+        for epoch in range(start_epoch, num_epochs):
+            train_metrics = self.train_epoch(evaluator_name='train', data_loader=train_loader)
+            train_eval_metrics = self.eval_epoch(evaluator_name='train_eval', data_loader=train_eval_loader)
+            valid_metrics = self.eval_epoch(evaluator_name='valid', data_loader=valid_loader)
+            
+            print(f'Epoch #{epoch} - {time.asctime()}')
+            print(f"\t {train_metrics}")
+            print(f'\t {train_eval_metrics}')
+            print(f'\t {valid_metrics}')
+            logger.info(train_metrics)
+            logger.info(train_eval_metrics)
+            logger.info(valid_metrics)
+            
+            lr_scheduler.step(valid_metrics[score_name])
+            early_stopping(valid_metrics)
+            if early_stopping.early_stop:
+                logger.info('Model can not improve. Stop Training !!!')
+                break
+            
+            model_state_dict = copy.deepcopy(self.model.state_dict())
+            optim_state_dict = copy.deepcopy(self.optimizer.state_dict())
+            #best checkpoint
+            if valid_metrics[score_name] < best_score:                
+                if save_dir.joinpath(f'best_{score_name}_{best_score}.pth').exists():
+                    os.remove(str(save_dir.joinpath(f'best_{score_name}_{best_score}.pth')))
+                best_score = valid_metrics[score_name]
+                save_path = save_dir.joinpath(f'best_{score_name}_{best_score}.pth')
+                logger.info(f'Saving Checkpoint: {str(save_path)}')
+                checkpoint = {
+                    'state_dict': model_state_dict
+                }
+                torch.save(obj=checkpoint, f=str(save_path))
+            
+            # back_up checkpoint
+            if save_dir.joinpath(f'backup_epoch{epoch-1}.pth').exists():
+                os.remove(str(save_dir.joinpath(f'backup_epoch{epoch-1}.pth')))
+            save_path = save_dir.joinpath(f'backup_epoch{epoch}.pth')
+            logger.info(f'Saving Back_up: {str(save_path)}')
+            backup = {
+                'start_epoch': epoch + 1,
+                'state_dict': model_state_dict,
+                'optimizer': optim_state_dict,
+                'best_score': best_score,
+                'score_name': early_stopping.monitor,
+            }
+            torch.save(obj=backup, f=str(save_path))
+        print(f'{time.asctime()} - COMPLETE')
+        logger.info(f'{time.asctime()} - COMPLETE')
