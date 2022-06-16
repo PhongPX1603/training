@@ -58,9 +58,6 @@ if __name__ == "__main__":
         metrics=metrics,
         device=device,
         tensorboard=tensorboard,
-    )
-    
-    trainer.train(
         resume_path=args.resume_path,
         save_dir=save_dir,
         num_epochs=args.num_epochs,
@@ -70,4 +67,6 @@ if __name__ == "__main__":
         lr_scheduler=lr_scheduler,
         early_stopping=early_stopping,
         logger=logger
-        )
+    )
+    
+    trainer.train()
