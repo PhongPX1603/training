@@ -4,12 +4,11 @@ import logging
 class Logger:
     def __init__(
         self,
-        log_dir: str = 'saved',
         log_mode = None,
         log_formatter = None
     ):
         super(Logger, self).__init__()
-        self.log_dir = log_dir
+        self.log_dir = None
         self.log_mode = log_mode
         self.log_formatter = log_formatter
     

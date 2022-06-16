@@ -101,6 +101,8 @@ class Trainer:
 
     def train(self):
         # Resume
+        mode = self.early_stopping.mode
+        best_score_mode = 1 if mode == 'min' else -1
         if self.resume_path is not None:
             checkpoint = torch.load(f=self.resume_path, map_location='cpu')
             self.model.load_state_dict(checkpoint['state_dict'])
@@ -109,13 +111,15 @@ class Trainer:
             score_name = checkpoint['score_name']
             start_epoch = checkpoint['start_epoch']
             self.early_stopping.best_score = best_score
+            self.logger.info(f"Start Training with lr - {self.optimizer['lr']}")
             print('RESUME !!!')
         else:
             start_epoch = 0
-            mode = self.early_stopping.mode
             score_name = self.early_stopping.monitor
-            best_score = np.Inf if mode == 'min' else -np.Inf
+            best_score = np.Inf if mode == 'min' else 0
             print('Start Training !!!')
+        
+            
         print(f'{time.asctime()} - STARTED')
         for epoch in range(start_epoch, self.num_epochs):
             train_metrics = self.train_epoch(evaluator_name='train', data_loader=self.train_loader)
@@ -138,17 +142,15 @@ class Trainer:
             
             model_state_dict = copy.deepcopy(self.model.state_dict())
             optim_state_dict = copy.deepcopy(self.optimizer.state_dict())
+            
             #best checkpoint
-            if valid_metrics[score_name] < best_score:                
+            if valid_metrics[score_name] * best_score_mode < best_score:                
                 if self.save_dir.joinpath(f'best_{score_name}_{best_score}.pth').exists():
                     os.remove(str(self.save_dir.joinpath(f'best_{score_name}_{best_score}.pth')))
                 best_score = valid_metrics[score_name]
                 save_path = self.save_dir.joinpath(f'best_{score_name}_{best_score}.pth')
                 self.logger.info(f'Saving Checkpoint: {str(save_path)}')
-                checkpoint = {
-                    'state_dict': model_state_dict
-                }
-                torch.save(obj=checkpoint, f=str(save_path))
+                torch.save(obj=model_state_dict, f=str(save_path))
             
             # back_up checkpoint
             if self.save_dir.joinpath(f'backup_epoch{epoch-1}.pth').exists():
@@ -163,5 +165,5 @@ class Trainer:
                 'score_name': self.early_stopping.monitor,
             }
             torch.save(obj=backup, f=str(save_path))
-        print(f'{time.asctime()} - COMPLETE')
-        self.logger.info(f'{time.asctime()} - COMPLETE')
+        print(f'{time.asctime()} - COMPLETE !!!')
+        self.logger.info(f'{time.asctime()} - COMPLETE !!!')

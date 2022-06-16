@@ -124,13 +124,21 @@ model:
     num_classes: 9
     pretrained: True
 
+# optimizer:
+#   module: torch.optim
+#   class: SGD
+#   SGD:
+#     params: config['model'].parameters()
+#     lr: 0.001
+#     momentum: 0.92
+
 optimizer:
   module: torch.optim
-  class: SGD
-  SGD:
+  class: Adam
+  Adam:
     params: config['model'].parameters()
-    lr: 0.01
-    momentum: 0.9
+    lr: 0.001
+    amsgrad: True
 
 early_stopping:
   module: handler.early_stopping
@@ -165,7 +173,6 @@ logger:
   module: handler.logger
   class: Logger
   Logger:
-    log_dir: '''runs/NATCOM'''
     log_mode: logging.DEBUG
     log_formatter: '''%(asctime)s - %(name)s - %(levelname)s - %(message)s'''
 
