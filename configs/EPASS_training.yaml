@@ -4,7 +4,7 @@ data:
     class: DataLoader
     DataLoader:
       dataset:
-        module: flame.core.data.document_classification
+        module: datasets.EPASS.dataset
         class: DocumentClassification
         DocumentClassification:
           datadirs:
@@ -52,7 +52,7 @@ data:
     class: DataLoader
     DataLoader:
       dataset:
-        module: flame.core.data.document_classification
+        module: datasets.EPASS.dataset
         class: DocumentClassification
         DocumentClassification:
           datadirs:
@@ -81,7 +81,7 @@ data:
     class: DataLoader
     DataLoader:
       dataset:
-        module: flame.core.data.document_classification
+        module: datasets.EPASS.dataset
         class: DocumentClassification
         DocumentClassification:
           datadirs:
